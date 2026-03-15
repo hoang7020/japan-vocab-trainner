@@ -26,7 +26,7 @@ def load_vocabulary(path: pathlib.Path) -> pd.DataFrame:
         st.stop()
 
     try:
-        df = pd.read_excel(path, engine="calamine")
+        df = pd.read_excel(path, engine="openpyxl")
     except Exception as e:
         st.error(f"Không đọc được file Excel: {e}")
         st.stop()
