@@ -145,24 +145,45 @@ def main():
 
     # Lấy danh sách file Excel trong thư mục docs
     docs_dir = pathlib.Path(__file__).parent / "docs"
-    excel_files = []
-    if docs_dir.exists():
-        excel_files = sorted(p for p in docs_dir.glob("*.xlsx") if p.is_file())
 
-    if not excel_files:
-        st.error(
-            "Không tìm thấy file .xlsx nào trong thư mục `docs`.\n"
-            "Hãy đặt các file từ vựng (ví dụ `chap2.xlsx`, `vocabulary.xlsx`) vào thư mục `docs`."
-        )
-        return
+    def list_excel_files() -> List[pathlib.Path]:
+        if not docs_dir.exists():
+            return []
+        return sorted(p for p in docs_dir.glob("*.xlsx") if p.is_file())
 
-    file_options = [p.name for p in excel_files]
-    default_file_index = 0
-    if "selected_file_name" in st.session_state and st.session_state["selected_file_name"] in file_options:
-        default_file_index = file_options.index(st.session_state["selected_file_name"])
+    excel_files = list_excel_files()
 
     with st.sidebar:
         st.header("Cài đặt bài học")
+
+        uploaded_file = st.file_uploader(
+            "Tải lên file Excel mới (.xlsx)\n(File sẽ được lưu vào thư mục `docs`)",
+            type=["xlsx"],
+        )
+        if uploaded_file is not None:
+            docs_dir.mkdir(parents=True, exist_ok=True)
+            save_path = docs_dir / uploaded_file.name
+            try:
+                with open(save_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                st.success(f"Đã lưu file `{uploaded_file.name}` vào thư mục `docs`.")
+                st.session_state["selected_file_name"] = uploaded_file.name
+                # Cập nhật lại danh sách file sau khi lưu (trong cùng lần chạy)
+                excel_files = list_excel_files()
+            except Exception as e:
+                st.error(f"Không lưu được file: {e}")
+
+        if not excel_files:
+            st.error(
+                "Không tìm thấy file .xlsx nào trong thư mục `docs`.\n"
+                "Hãy tải lên file từ vựng bằng ô bên trên hoặc đặt các file (ví dụ `chap2.xlsx`, `vocabulary.xlsx`) vào thư mục `docs`."
+            )
+            return
+
+        file_options = [p.name for p in excel_files]
+        default_file_index = 0
+        if "selected_file_name" in st.session_state and st.session_state["selected_file_name"] in file_options:
+            default_file_index = file_options.index(st.session_state["selected_file_name"])
 
         selected_file_name = st.selectbox(
             "Chọn file từ vựng (trong thư mục docs)",
